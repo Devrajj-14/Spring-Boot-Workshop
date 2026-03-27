@@ -6,59 +6,89 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * UC4: AddressBookService
- * Service implementation for address book operations.
- * Decouples business logic from the controller layer.
- * At this UC4 stage, methods return placeholder/stub responses.
- * Actual storage (local list) will be introduced in UC5.
+ * UC5: AddressBookService - with in-memory local List storage
+ * Now the service layer actually stores data in a List (in-memory).
+ * Supports all CRUD operations:
+ * - GET all
+ * - GET by ID
+ * - POST (create)
+ * - PUT (update by ID)
+ * - DELETE (delete by ID)
  */
 @Service
 public class AddressBookService implements IAddressBookService {
 
+    // In-memory storage for address book entries
+    private final List<AddressBookData> addressBookList = new ArrayList<>();
+
+    // Simple ID generator (auto-increments for each new entry)
+    private final AtomicInteger idCounter = new AtomicInteger(1);
+
     /**
-     * Returns all address book entries - placeholder at UC4
+     * Returns all address book entries from the local list
      */
     @Override
     public List<AddressBookData> getAllEntries() {
-        // Placeholder: returns empty list - UC5 will have actual storage
-        return new ArrayList<>();
+        return new ArrayList<>(addressBookList);
     }
 
     /**
-     * Returns entry by ID - placeholder at UC4
+     * Returns an address book entry by its ID from local list
+     * Returns null if not found
      */
     @Override
     public AddressBookData getEntryById(int id) {
-        // Placeholder: returns a sample model object for UC4 demonstration
-        return new AddressBookData(id, "Placeholder Name", "Placeholder Address", "Placeholder City", "0000000000");
+        return addressBookList.stream()
+                .filter(entry -> entry.getId() == id)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
-     * Creates a new address book entry from DTO - placeholder at UC4
+     * Creates a new address book entry from DTO and stores it in local list
+     * Auto-generates ID using atomic counter
      */
     @Override
     public AddressBookData createEntry(AddressBookDTO dto) {
-        // Placeholder: maps DTO to model with mock ID (UC5 will do real storage)
-        return new AddressBookData(1, dto.getName(), dto.getAddress(), dto.getCity(), dto.getPhoneNumber());
+        int newId = idCounter.getAndIncrement();
+        AddressBookData newEntry = new AddressBookData(
+                newId,
+                dto.getName(),
+                dto.getAddress(),
+                dto.getCity(),
+                dto.getPhoneNumber()
+        );
+        addressBookList.add(newEntry);
+        return newEntry;
     }
 
     /**
-     * Updates existing entry by ID from DTO - placeholder at UC4
+     * Updates an existing address book entry by ID using DTO data
+     * Returns updated entry, or null if ID not found
      */
     @Override
     public AddressBookData updateEntry(int id, AddressBookDTO dto) {
-        // Placeholder: returns updated model without actual persistence
-        return new AddressBookData(id, dto.getName(), dto.getAddress(), dto.getCity(), dto.getPhoneNumber());
+        for (AddressBookData entry : addressBookList) {
+            if (entry.getId() == id) {
+                entry.setName(dto.getName());
+                entry.setAddress(dto.getAddress());
+                entry.setCity(dto.getCity());
+                entry.setPhoneNumber(dto.getPhoneNumber());
+                return entry;
+            }
+        }
+        return null; // entry with given ID not found
     }
 
     /**
-     * Deletes entry by ID - placeholder at UC4
+     * Deletes an address book entry by ID from local list
+     * Returns true if deleted, false if not found
      */
     @Override
     public boolean deleteEntry(int id) {
-        // Placeholder: always returns true (no real storage yet)
-        return true;
+        return addressBookList.removeIf(entry -> entry.getId() == id);
     }
 }
